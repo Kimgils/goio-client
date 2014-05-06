@@ -1,0 +1,25 @@
+{
+  "name": "goio-client",
+  "version": "0.1.0",
+  "description": "The partner of GoIO.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kimgils/GoIO-client.git"
+  },
+  "keywords": [
+    "realtime",
+    "room",
+    "broadcast",
+    "client"
+  ],
+  "author": "King Chung (kingchung@outlook.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kimgils/GoIO-client/issues"
+  },
+  "homepage": "https://github.com/Kimgils/GoIO-client"
+}
