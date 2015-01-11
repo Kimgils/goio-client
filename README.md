@@ -1,4 +1,6 @@
-goio-client
+GoIO-client
 ===========
 
-The partner of goio
+The partner of GoIO
+
+Server: https://github.com/elsonwu/goio
