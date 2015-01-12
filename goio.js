@@ -10,7 +10,7 @@
     // Set up GoIO appropriately for the environment. Start with AMD.
     if (typeof define === 'function' && define.amd) {
         //jqueryXDomainRequest
-        define(['backbone', 'underscore', 'jquery', 'jqueryXDomainRequest', 'exports'], function(_, $, jqueryXDomainRequest, exports) {
+        define(['backbone', 'underscore', 'jquery', 'jqueryXDomainRequest', 'exports'], function(Backbone, _, $, jqueryXDomainRequest, exports) {
             // Export global even in AMD case in case this script is loaded with
             // others that may still expect a global GoIO.
             root.GoIO = factory(Backbone, _, exports, $);
