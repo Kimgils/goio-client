@@ -445,7 +445,7 @@
 
             var url = Utils.format({
                 pathnames: [
-                    'set_data',
+                    'user/data',
                     clientId,
                     key
                 ]
@@ -467,10 +467,9 @@
         },
         get: function(userId, key, callback) {
             var that = this;
-
             var url = Utils.format({
                 pathnames: [
-                    'get_data',
+                    'user/data',
                     userId,
                     key
                 ]
@@ -500,11 +499,73 @@
                     //GoIO.debug("IO GET COMPLETE:", response);
                 });
         },
+        setRoomData(roomId, key, value) {
+            var that = this,
+                clientId = this._clientId;
+
+            var data = {};
+            data[key] = value;
+
+            var url = Utils.format({
+                pathnames: [
+                    'room/data',
+                    roomId
+                ]
+            });
+            $.ajax({
+                url: url,
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'text/plain; charset=utf-8',
+                data: JSON.stringify(data),
+                crossDomain: true,
+                cache: false
+            });
+
+            this._data = this._data || {};
+            this._data[key] = value;
+
+            GoIO.debug('SET ROOM DATA', key, value);
+        },
+        getRoomData(roomId, key, callback){
+            var that = this;
+            var url = Utils.format({
+                pathnames: [
+                    'room/data',
+                    roomId,
+                    key
+                ]
+            });
+            $.ajax({
+                url: url,
+                dataType: 'text',
+                crossDomain: true,
+                cache: false
+            })
+            .done(function(response) {
+                var data = null;
+                try {
+                    data = JSON.parse(response);
+                } catch (e) {
+                    data = response;
+                }
+
+                if ('function' == typeof callback) {
+                    callback(data);
+                }
+            })
+            .fail(function(response) {
+                GoIO.debug("IO GET ROOM DATA FAIL:", response);
+            })
+            .always(function(response) {
+                //GoIO.debug("IO GET COMPLETE:", response);
+            });
+        },
         getRoomUsers: function(roomId, callback) {
             var that = this;
             var url = Utils.format({
                 pathnames: [
-                    'room_users',
+                    'room/users',
                     roomId
                 ]
             });
