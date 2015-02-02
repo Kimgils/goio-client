@@ -499,10 +499,7 @@
                     //GoIO.debug("IO GET COMPLETE:", response);
                 });
         },
-        setRoomData(roomId, key, value) {
-            var that = this,
-                clientId = this._clientId;
-
+        setRoomData: function(roomId, key, value) {
             var data = {};
             data[key] = value;
 
@@ -527,8 +524,7 @@
 
             GoIO.debug('SET ROOM DATA', key, value);
         },
-        getRoomData(roomId, key, callback){
-            var that = this;
+        getRoomData: function(roomId, key, callback){
             var url = Utils.format({
                 pathnames: [
                     'room/data',
