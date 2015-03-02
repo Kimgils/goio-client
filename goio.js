@@ -506,7 +506,8 @@
             var url = Utils.format({
                 pathnames: [
                     'room/data',
-                    roomId
+                    roomId,
+                    key
                 ]
             });
             $.ajax({
