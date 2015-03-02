@@ -10,24 +10,22 @@
     // Set up GoIO appropriately for the environment. Start with AMD.
     if (typeof define === 'function' && define.amd) {
         //jqueryXDomainRequest
-        define(['backbone', 'underscore', 'jquery', 'jqueryXDomainRequest', 'exports'], function(Backbone, _, $, jqueryXDomainRequest, exports) {
+        define(['jquery', 'jqueryXDomainRequest', 'exports'], function($, jqueryXDomainRequest, exports) {
             // Export global even in AMD case in case this script is loaded with
             // others that may still expect a global GoIO.
-            root.GoIO = factory(Backbone, _, exports, $);
+            root.GoIO = factory(exports, $);
         });
 
         // Next for Node.js or CommonJS. jQuery may not be needed as a module.
     } else if (typeof exports !== 'undefined') {
-        var _ = require('underscore')
-        var Backbone = require('backbone');
-        factory(Backbone, _, exports, $);
+        factory(exports, $);
 
         // Finally, as a browser global.
     } else {
-        root.GoIO = factory(root.Backbone, root._, {}, (root.jQuery || root.$));
+        root.GoIO = factory({}, (root.jQuery || root.$));
     }
 
-}(this, function(Backbone, _, GoIO, $) {
+}(this, function(GoIO, $) {
 
     GoIO.settings = {
         api: "",
@@ -49,7 +47,50 @@
         console.log(args);
     }
 
-    var Utils = {
+    //Utils
+    var _ioUtil = {
+        once: function(func){
+            var memo = false, times = 1;
+            return function(){
+                if(times--) { 
+                    memo = func.apply(this, arguments);
+                } else {
+                    func = null;
+                }
+                return memo;
+            }
+        },
+        keys: function(obj){
+            if ('object' != typeof obj) return [];
+            if (Object.keys) return Object.keys(obj);
+            var keys = [];
+            for (var key in obj) {
+                if (obj != null && hasOwnProperty.call(obj, key)) {
+                    keys.push(key)
+                }
+            }
+            return keys;
+        },
+        each: function(obj, iteratee, context){
+            if (obj == null) return obj;
+            for(var i in obj) {
+                iteratee.apply(context || this, [obj[i], i]);
+            }
+            return obj;
+        },
+        extend: function(obj){
+            if ('object' != typeof obj) return obj;
+            var source, prop;
+            for (var i = 1, length = arguments.length; i < length; i++) {
+              source = arguments[i];
+              for (prop in source) {
+                if (hasOwnProperty.call(source, prop)) {
+                    obj[prop] = source[prop];
+                }
+              }
+            }
+            return obj;
+        },
         format: function(urlObj) {
             var paths = [];
             if (!urlObj) {
@@ -69,10 +110,67 @@
         }
     }
 
+    var _ioEvent = {
+        on: function(name, callback, context){
+            this._events || (this._events = {});
+            if(!name || !callback) {return this;}
+            var events = this._events[name] || (this._events[name] = []);
+            events.push({callback: callback, context: context, ctx: context || this});
+            return this;
+        },
+        once: function(name, callback, context){
+            var self = this;
+            var once = _ioUtil.once(function(){
+                self.off(name, callback);
+                callback.apply(context || self, arguments);
+            });
+            once._callback = callback;
+            return this.on(name, once, context);
+        },
+        off: function(name, callback, context){
+            var i, j, ev, names, events, retain;
+            var args = [].slice.call(arguments);
+            if(!args.length) {
+                this._events = void 0;
+            }
+            names = name ? [name] : _ioUtil.keys(this._events);
+            for(i = 0; i < names.length; i++) {
+                name = names[i];
+                if(events = this._events[name]) {
+                    this._events[name] = retain = [];
+                    if(callback || context) {
+                        for(j = 0; j < events.length; j++) {
+                            ev = events[j];
+                            if((callback && callback !== ev.callback && callback !== ev.callback._callback) || (context && context !== ev.context)) {
+                                retain.push(ev);
+                            }
+                        }
+                    }
+                }
+                if(!retain.length) {
+                    delete this._events[name];
+                }
+            }
+            return this;
+        },
+        trigger: function(name){
+            var i, ev, events, args = [].slice.call(arguments, 1);
+            if (events = this._events[name]) {
+                for (i = 0; i < events.length; i++) {
+                    ev = events[i];
+                    if("function" == typeof ev.callback) {
+                        ev.callback.apply(ev.ctx, args);
+                    }
+                }
+            }
+            return this;
+        }
+    }
+
     var IO = function() {
         var that = this;
         this._clientId = '';
-        this._eventEngine = _.extend({}, Backbone.Events);
+        this._eventEngine = _ioUtil.extend({}, _ioEvent);
 
         this._eventLoopFlag = false;
 
@@ -89,7 +187,7 @@
         this.userId = '';
     }
 
-    _.extend(IO.prototype, {
+    _ioUtil.extend(IO.prototype, {
         _packetHandler: function(packet) {
             var eventName = packet.eventName,
                 data = packet.data,
@@ -189,7 +287,7 @@
                 var clientId = that._clientId;
                 //Encode the packet
                 var message = that._encodePacket(packet);
-                var url = Utils.format({
+                var url = _ioUtil.format({
                     pathnames: [
                         'message',
                         clientId
@@ -235,7 +333,7 @@
 
             //Encode the packet
             //var message = this._encodePacket(packet);
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'message',
                     clientId
@@ -278,7 +376,7 @@
                     ran = true;
                     that._eventEngine.once('connected', function() {
                         clearTimeout(INTERVAL);
-                        var roomIds = _.keys(that._rooms);
+                        var roomIds = _ioUtil.keys(that._rooms);
                         for (var i in roomIds) {
                             if (roomIds[i] && '' !== roomIds[i]) {
                                 that.join(roomIds[i]);
@@ -310,7 +408,7 @@
             var that = this;
             this.userId = userId;
 
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'client',
                     userId
@@ -344,7 +442,7 @@
         },
         disconnect: function() {
             var that = this;
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'kill_client',
                     this._clientId
@@ -384,15 +482,15 @@
             var self = this;
             var args = [].slice.call(arguments);
             if (!args.length) {
-                _.each(this._rooms, function(room) {
-                    _.each(room['bcCallbacks'], function(cb) {
+                _ioUtil.each(this._rooms, function(room) {
+                    _ioUtil.each(room['bcCallbacks'], function(cb) {
                         self._eventEngine.off('broadcast', cb);
                     });
                 });
             } else if (1 == args.length) {
                 var roomId = args[0];
                 if (this._rooms[roomId] && this._rooms[roomId]['bcCallbacks']) {
-                    _.each(this._rooms[roomId]['bcCallbacks'], function(cb) {
+                    _ioUtil.each(this._rooms[roomId]['bcCallbacks'], function(cb) {
                         self._eventEngine.off('broadcast', cb);
                     });
                 }
@@ -443,7 +541,7 @@
             var data = {};
             data[key] = value;
 
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'user/data',
                     clientId,
@@ -467,7 +565,7 @@
         },
         get: function(userId, key, callback) {
             var that = this;
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'user/data',
                     userId,
@@ -503,7 +601,7 @@
             var data = {};
             data[key] = value;
 
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'room/data',
                     roomId,
@@ -526,7 +624,7 @@
             GoIO.debug('SET ROOM DATA', key, value);
         },
         getRoomData: function(roomId, key, callback){
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'room/data',
                     roomId,
@@ -560,7 +658,7 @@
         },
         getRoomUsers: function(roomId, callback) {
             var that = this;
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'room/users',
                     roomId
@@ -601,7 +699,7 @@
                 GoIO.debug("Param is invalid.");
             }
 
-            var url = Utils.format({
+            var url = _ioUtil.format({
                 pathnames: [
                     'online_status',
                 ]
