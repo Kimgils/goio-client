@@ -1,0 +1,21 @@
+{
+  "name": "goio-client",
+  "version": "1.0.1",
+  "homepage": "https://github.com/Kimgils/goio-client",
+  "authors": [
+    "King Chung <kingchung@outlook.com>"
+  ],
+  "description": "The partner of GoIO.",
+  "main": "goio.js",
+  "keywords": [
+    "realtime",
+    "room",
+    "boardcast",
+    "client"
+  ],
+  "dependencies": {
+    "jquery": "*",
+    "jqueryXDomainRequest": "*"
+  },
+  "license": "MIT"
+}
